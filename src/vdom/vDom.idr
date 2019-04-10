@@ -1,33 +1,13 @@
 module src.vdom.vDom
 
 
--- import Data.SortedMap
-
--- data Props = SortedMap String String
-
-public export
-data EventListener : Type where
-  On : String -> (Ptr -> JS_IO ()) -> EventListener
-
 public export
 Props : Type
 Props = List (String, String)
 
-
-checkPropEquality : Props -> Props -> Bool
-checkPropEquality [] [] = True
-checkPropEquality (x::xs) [] = False
-checkPropEquality [] (y::ys) = False
-checkPropEquality (x::xs) (y::ys) =
-    if fst x == fst y && snd x == snd y then
-      checkPropEquality xs ys
-    else
-      False
-
-
-prettyPrint : Props -> String
-prettyPrint (x::xs) = fst x ++ "=" ++ snd x ++ " " ++ end
-  where end = if xs == [] then "" else prettyPrint xs
+public export
+data EventListener : Type where
+  On : String -> (Ptr -> JS_IO ()) -> EventListener
 
 
 public export 
@@ -39,15 +19,25 @@ data VNode : Type where
     -> VNode 
   Text : (content: String) -> VNode 
 
--- prettyPrintChildren : List VNode -> String
--- prettyPrintChildren [] = ""
--- prettyPrintChildren (x::xs) = 
---   let start = 
---     case x of
---       Text content => content
---       otherwise => show x
---   in
---     start ++ prettyPrintChildren xs 
+export
+isElement : VNode -> Bool
+isElement (Text _ ) = False
+isElement _ = True 
+
+export
+checkPropEquality : Props -> Props -> Bool
+checkPropEquality [] [] = True
+checkPropEquality (x::xs) [] = False
+checkPropEquality [] (y::ys) = False
+checkPropEquality (x::xs) (y::ys) =
+    if fst x == fst y && snd x == snd y then
+      checkPropEquality xs ys
+    else
+      False
+
+prettyPrint : Props -> String
+prettyPrint (x::xs) = fst x ++ "=" ++ snd x ++ " " ++ end
+  where end = if xs == [] then "" else prettyPrint xs
 
 
 export
@@ -58,7 +48,6 @@ Eq VNode where
   (Text str1) == (Text str2) = str1 == str2
   _ == _ = True
 
-
 export
 Show VNode where
   show (Element tag props handlers children) = "\n<" 
@@ -68,8 +57,6 @@ Show VNode where
     ++ show children 
     ++ "\n</" ++ tag ++ ">" 
   show (Text content) = content
-
-
 
 
 

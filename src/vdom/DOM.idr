@@ -2,7 +2,6 @@ module src.vdom.DOM
 
 import src.vdom.vDom
 
-
 export
 data Element = MkElem Ptr
 
@@ -79,6 +78,15 @@ makeDomFromVirtual html = do
   pure ()
 
 
+
+
+maybeZip : List a -> List b -> List (Maybe a, Maybe b)
+maybeZip (a::as) (b::bs) = (Just a , Just b ) :: maybeZip as bs
+maybeZip (a::as) []      = (Just a , Nothing) :: maybeZip as []
+maybeZip []      (b::bs) = (Nothing, Just b ) :: maybeZip [] bs
+maybeZip _       _       = []
+  
+
 export
 updateDom : Element -> Maybe VNode -> Maybe VNode -> Int -> JS_IO Element
 updateDom parent old new index =
@@ -93,11 +101,24 @@ updateDom parent old new index =
       case new of 
         Nothing => removeChild parent index
         Just newNode => 
-          if oldNode == newNode then do
-            newChild <- mapToDomElement newNode
-            replaceChild parent newChild index
+          if not (oldNode == newNode) then 
+            do
+              newChild <- mapToDomElement newNode
+              replaceChild parent newChild index
           else 
-            pure parent
+            if isElement newNode then 
+              do
+                let 
+                  (vDom.Element _ _ _ oldChildren) = oldNode
+                  (vDom.Element _ _ _ newChildren) = newNode
+                  vNodes = maybeZip oldChildren newChildren
+                  indexedNodes = zip [0 .. length vNodes] vNodes
+
+                next <- getChild parent index
+                traverse_ (\(i, (o, n)) => updateDom next o n i) indexedNodes
+                pure parent
+            else 
+              pure parent  
   
 
 
